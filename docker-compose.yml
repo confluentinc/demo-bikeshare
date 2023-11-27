@@ -4,4 +4,4 @@ services:
     image: busybox
     command: cat /etc/opt/demo/${CONFIG_FILE}
     volumes:
-      - ./client.properties:/etc/opt/demo/${CONFIG_FILE}
+      - ./${CONFIG_FILE}:/etc/opt/demo/${CONFIG_FILE}
