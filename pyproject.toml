@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "citibike"
+version = "0.1.0"
+description = ""
+authors = ["Adi Wabisabi <awabisabi@confluent.io>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+gbfs-client = "^0.1.8"
+confluent-kafka = "^2.3.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
