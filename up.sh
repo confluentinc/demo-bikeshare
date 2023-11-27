@@ -47,6 +47,16 @@ else
     echo "Configuration successfully written to $CONFIG_FILE."
 fi
 
+# Accept an argument for the topic name
+if [ "$#" -eq 1 ]; then
+    TOPIC_NAME=" $1"  # Prepend a space to the provided topic name
+    export TOPIC_NAME
+    echo "Topic name set to: '$TOPIC_NAME'"
+else
+    export TOPIC_NAME="demo-topic"
+    echo "Topic name set to default: '$TOPIC_NAME'"
+fi
+
 # Run the docker-compose up command with $CONFIG_FILE linked as a volume
 docker-compose up --build --remove-orphans
 

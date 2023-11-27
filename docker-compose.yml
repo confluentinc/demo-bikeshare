@@ -1,6 +1,12 @@
 version: '3'
 services:
-  hello:
+  producer:
     build: .
+    command: poetry run python3 hello.py produce ${TOPIC_NAME}
+    volumes:
+      - ./${CONFIG_FILE}:/etc/opt/demo/${CONFIG_FILE}
+  consumer:
+    build: .
+    command: poetry run python3 hello.py consume ${TOPIC_NAME}
     volumes:
       - ./${CONFIG_FILE}:/etc/opt/demo/${CONFIG_FILE}

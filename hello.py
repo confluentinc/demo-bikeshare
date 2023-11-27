@@ -1,7 +1,10 @@
 from uuid import uuid4
+from sys import argv
+from time import sleep
 from confluent_kafka import Producer, Consumer
 
 config_path="/etc/opt/demo/client.properties"
+# config_path="client.properties"
 
 def read_ccloud_config_data(config_file):
     omitted_fields = set(['schema.registry.url', 'basic.auth.credentials.source', 'basic.auth.user.info'])
@@ -17,36 +20,58 @@ def read_ccloud_config_data(config_file):
 
 
 def produce(topic):
-    print(f'produce(topic={topic})')
     producer = Producer(read_ccloud_config_data(config_path))
-    producer.produce(topic, key="key", value=str(uuid4()))
-    producer.flush()
+    
+    try:
+        while True:
+            value = str(uuid4())
+            print(f'Sending: topic->{topic} | key->keyName | value->{value}')
+            producer.produce(topic, key="keyName", value=value)
+            producer.flush()
+            sleep(1)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        producer.flush()
 
 def consume(topic):
-    print(f'consume(topic={topic}))')
     props = read_ccloud_config_data(config_path)
     props["group.id"] = "python-group-1"
     props["auto.offset.reset"] = "earliest"
-    print('before consumer init')
     consumer = Consumer(props)
     consumer.subscribe([topic])
     try:
-        print('inside try')
         while True:
-            print('inside while True')
-            msg = consumer.poll(1.0)
+            msg = consumer.poll(2)
             if msg is not None and msg.error() is None:
-                print("key = {key:12} value = {value:12}".format(key=msg.key().decode('utf-8'), value=msg.value().decode('utf-8')))
+                key, value = msg.key().decode('utf-8'), msg.value().decode('utf-8')
+                print(f"Received: topic->{topic} key->{key} value->{value}")
             else:
-                print('no message received by consumer')
+                print(f'no message received by consumer for topic: {topic}')
     except KeyboardInterrupt:
-        print('keyboard interrupt')
         pass
     finally:
         consumer.close()
         
 if __name__ == "__main__":
-    print('begin')
-    topic = "demo-topic"
-    produce(topic)
-    consume(topic)
+
+    ## parse out command and optional topic name
+    if len(argv) < 2 or argv[1] not in ["produce", "consume"]:
+        print("Provide produce/consume as first argument")
+        exit(1)
+    if len(argv) > 3:
+        print("usage: produce/consume <topic> (optional)")
+        exit(1)
+    if len(argv) == 2:
+        topic = 'demo-topic'
+    else:
+        topic = argv[2]
+        
+    command = argv[1]
+    
+    ## run corresponding action
+    match command:
+        case "produce":
+            produce(topic)
+        case "consume":
+            consume(topic)
