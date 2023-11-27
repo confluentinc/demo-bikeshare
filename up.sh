@@ -48,5 +48,5 @@ else
 fi
 
 # Run the docker-compose up command with $CONFIG_FILE linked as a volume
-docker-compose up 
+docker-compose up --build --remove-orphans
 

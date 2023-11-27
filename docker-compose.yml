@@ -1,7 +1,6 @@
 version: '3'
 services:
-  busybox:
-    image: busybox
-    command: cat /etc/opt/demo/${CONFIG_FILE}
+  hello:
+    build: .
     volumes:
       - ./${CONFIG_FILE}:/etc/opt/demo/${CONFIG_FILE}
