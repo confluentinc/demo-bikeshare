@@ -49,8 +49,7 @@ fi
 
 # Accept an argument for the topic name
 if [ "$#" -eq 1 ]; then
-    TOPIC_NAME=" $1"  # Prepend a space to the provided topic name
-    export TOPIC_NAME
+    export TOPIC_NAME="$1"  # Prepend a space to the provided topic name
     echo "Topic name set to: '$TOPIC_NAME'"
 else
     export TOPIC_NAME="demo-topic"

@@ -1,12 +1,12 @@
 from uuid import uuid4
 from sys import argv
 from time import sleep
-from confluent_kafka import Producer, Consumer
+from confluent_kafka import Producer, Consumer, KafkaError
+from confluent_kafka.admin import AdminClient, NewTopic
 
-config_path="/etc/opt/demo/client.properties"
-# config_path="client.properties"
 
-def read_ccloud_config_data(config_file):
+def parse_config_file(config_file):
+    ## remove schema registry params from config as it causes an error later
     omitted_fields = set(['schema.registry.url', 'basic.auth.credentials.source', 'basic.auth.user.info'])
     conf = {}
     with open(config_file) as fh:
@@ -18,28 +18,44 @@ def read_ccloud_config_data(config_file):
                     conf[parameter] = value.strip()
     return conf
 
+def create_topic(conf, topic, num_partitions=1, replication_factor=3):
+    cli = AdminClient(conf)
 
-def produce(topic):
-    producer = Producer(read_ccloud_config_data(config_path))
+    futures = cli.create_topics([NewTopic(topic, num_partitions=num_partitions, replication_factor=replication_factor)])
+    for topic, future in futures.items():
+        try:
+            future.result()  # The result itself is None
+            print(f'Topic {topic} created')
+        except Exception as e:
+            # Continue if error code TOPIC_ALREADY_EXISTS, which may be true
+            # Otherwise fail fast
+            if e.args[0].code() != KafkaError.TOPIC_ALREADY_EXISTS:
+                print("Failed to create topic {}: {}".format(topic, e))
+                sys.exit(1)
+
+
+def produce(config, topic):
+    producer = Producer(config)
     
     try:
         while True:
             value = str(uuid4())
             print(f'Sending: topic->{topic} | key->keyName | value->{value}')
             producer.produce(topic, key="keyName", value=value)
-            producer.flush()
+            producer.poll()
             sleep(1)
     except KeyboardInterrupt:
         pass
     finally:
         producer.flush()
 
-def consume(topic):
-    props = read_ccloud_config_data(config_path)
-    props["group.id"] = "python-group-1"
-    props["auto.offset.reset"] = "earliest"
-    consumer = Consumer(props)
+def consume(config, topic):
+    config["group.id"] = "python-group-1"
+    config["auto.offset.reset"] = "earliest"
+    
+    consumer = Consumer(config)
     consumer.subscribe([topic])
+    
     try:
         while True:
             msg = consumer.poll(2)
@@ -54,6 +70,11 @@ def consume(topic):
         consumer.close()
         
 if __name__ == "__main__":
+    
+    ## TODO: make this part of the default config in the cli with cleo    
+    config_path="/etc/opt/demo/client.properties"
+    # config_path="client.properties"
+    config = parse_config_file(config_path)
 
     ## parse out command and optional topic name
     if len(argv) < 2 or argv[1] not in ["produce", "consume"]:
@@ -69,9 +90,12 @@ if __name__ == "__main__":
         
     command = argv[1]
     
+    ## create topic if it doesn't exist
+    create_topic(config, topic)
+    
     ## run corresponding action
     match command:
         case "produce":
-            produce(topic)
+            produce(config, topic)
         case "consume":
-            consume(topic)
+            consume(config, topic)
