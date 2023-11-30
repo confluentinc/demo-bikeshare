@@ -2,7 +2,7 @@ from confluent_kafka import KafkaError
 from confluent_kafka.admin import AdminClient, NewTopic
 
 
-def parse_config_file(config_file):
+def parse_cc_config_file(config_file):
     ## remove schema registry params from config as it causes an error later
     omitted_fields = set(['schema.registry.url', 'basic.auth.credentials.source', 'basic.auth.user.info'])
     conf = {}

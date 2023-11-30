@@ -1,0 +1,108 @@
+from gbfs.services import SystemDiscoveryService
+from rich import print
+
+ds = SystemDiscoveryService()
+
+def systems():
+    _systems = ds.systems
+    
+    ## group down to the state level and only keep US systems for now for simplicity
+    us_systems = {}
+    for system in _systems:
+        if system['Country Code'] == 'US':
+            try:
+                system['Location'] = system['Location'].replace(', US', '')
+                _, state = system['Location'].split(',')
+            except ValueError:
+                if system['Location'].endswith('NS'):
+                    # get out of here, canada
+                    continue
+                print(system)
+                raise
+            
+            us_systems.setdefault(state.strip(), []).append(system)
+            
+    return us_systems
+        
+    
+
+def system_detail(system_id):
+    return ds.get_system_by_id(system_id)
+
+def system_feeds(system_id):
+    client = ds.instantiate_client(system_id)
+    return client.feed_names
+
+def system_feed_detail(system_id, feed_name):
+    client = ds.instantiate_client(system_id)
+    if client is None:
+        return None
+
+    return client.request_feed(feed_name)
+
+def system_stations(system_id):
+    client = ds.instantiate_client(system_id)
+    if client is None:
+        return None
+
+    return client.request_feed('station_information').get('data').get('stations')
+
+def system_station_status(system_id, station_id):
+    client = ds.instantiate_client(system_id)
+    if client is None:
+        return None
+
+    feed = client.request_feed('station_information')
+    items = feed.get('data').get('stations')
+
+    try:
+        result = next(filter(lambda x: str(x.get('station_id')) == station_id, items))
+    except StopIteration:
+        return None
+
+    result.update({'last_updated': feed.get('last_updated'), 'ttl': feed.get('ttl')})
+    return result
+
+
+
+def system_station_information(system_id, station_id):
+    client = ds.instantiate_client(system_id)
+    if client is None:
+        return None
+
+    feed = client.request_feed('station_status')
+    items = feed.get('data').get('stations')
+
+    try:
+        result = next(filter(lambda x: str(x.get('station_id')) == station_id, items))
+    except StopIteration:
+        return None
+
+    result.update({'last_updated': feed.get('last_updated'), 'ttl': feed.get('ttl')})
+    return result
+
+
+
+def system_station_detail(system_id, station_id):
+    client = ds.instantiate_client(system_id)
+    if client is None:
+        return None
+
+    station_feed = client.request_feed('station_information')
+    status_feed = client.request_feed('station_status')
+
+    all_stations = station_feed.get('data').get('stations')
+    all_statuses = status_feed.get('data').get('stations')
+
+    try:
+        station = next(filter(lambda x: str(x.get('station_id')) == station_id, all_stations))
+        id_join = str(station.get('station_id'))
+        status = next(filter(lambda x: str(x.get('station_id')) == id_join, all_statuses))
+    except StopIteration:
+        return None
+
+    result = {'last_updated': status_feed.get('last_updated'), 'ttl': status_feed.get('ttl')}
+    result.update(station)
+    result.update(status)
+
+    return result
