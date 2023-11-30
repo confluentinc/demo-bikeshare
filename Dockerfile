@@ -14,4 +14,3 @@ COPY . .
 RUN mv poetry.lock.bak poetry.lock
 
 ENV PYTHONUNBUFFERED=1
-CMD poetry run python3 hello.py

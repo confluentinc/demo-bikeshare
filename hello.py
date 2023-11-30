@@ -30,8 +30,8 @@ def create_topic(conf, topic, num_partitions=1, replication_factor=3):
             # Continue if error code TOPIC_ALREADY_EXISTS, which may be true
             # Otherwise fail fast
             if e.args[0].code() != KafkaError.TOPIC_ALREADY_EXISTS:
-                print("Failed to create topic {}: {}".format(topic, e))
-                sys.exit(1)
+                print(f"Failed to create topic {topic}: {e}")
+                exit(1)
 
 
 def produce(config, topic):

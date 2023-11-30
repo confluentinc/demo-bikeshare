@@ -1,14 +1,19 @@
 [tool.poetry]
-name = "citibike"
+name = "journey"
 version = "0.1.0"
 description = ""
 authors = ["Adi Wabisabi <awabisabi@confluent.io>"]
 readme = "README.md"
 
+[tool.poetry.scripts]
+journey = "journey.cli:run"
+
 [tool.poetry.dependencies]
 python = "^3.12"
 gbfs-client = "^0.1.8"
 confluent-kafka = "^2.3.0"
+typer = "^0.9.0"
+textual = "^0.43.0"
 
 
 [build-system]
