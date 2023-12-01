@@ -9,19 +9,27 @@ def systems():
     ## group down to the state level and only keep US systems for now for simplicity
     us_systems = {}
     for system in _systems:
-        if system['Country Code'] == 'US':
+        ## filter out systems that don't have stations
+        if (system['Country Code'] == 'US'
+            and ' ' not in system['System ID'] 
+            and 'bird' not in system['System ID']
+            and 'Link' not in system['System ID']
+            and 'lime' not in system['System ID']
+            and 'revel' not in system['System ID']
+            and not system['System ID'].isnumeric()
+            and not system['System ID'].startswith('9')):
             try:
                 system['Location'] = system['Location'].replace(', US', '')
                 _, state = system['Location'].split(',')
             except ValueError:
-                if system['Location'].endswith('NS'):
-                    # get out of here, canada
+                if  system['Location'].endswith('NS'):
+                    # filter out bad systems/locations
                     continue
                 print(system)
                 raise
             
             us_systems.setdefault(state.strip(), []).append(system)
-            
+      
     return us_systems
         
     

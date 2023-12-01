@@ -14,6 +14,7 @@ gbfs-client = "^0.1.8"
 confluent-kafka = "^2.3.0"
 typer = "^0.9.0"
 textual = "^0.43.0"
+textual-dev = "^1.2.1"
 
 
 [build-system]
