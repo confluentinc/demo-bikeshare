@@ -2,7 +2,7 @@ from typer import Typer
 
 from journey.globals import GLOBALS
 from journey.cli.bikeshare import bikes_menu
-from journey.utils import parse_cc_config_file
+from journey.data.kafka.utils import parse_cc_config_file
 
 cli = Typer()
 

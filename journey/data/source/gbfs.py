@@ -6,10 +6,10 @@ ds = SystemDiscoveryService()
 def systems():
     _systems = ds.systems
     
-    ## group down to the state level and only keep US systems for now for simplicity
     us_systems = {}
     for system in _systems:
-        ## filter out systems that don't have stations
+        
+        ## filter out systems that don't have stations and isolate to US for now
         if (system['Country Code'] == 'US'
             and ' ' not in system['System ID'] 
             and 'bird' not in system['System ID']
@@ -31,8 +31,7 @@ def systems():
             us_systems.setdefault(state.strip(), []).append(system)
       
     return us_systems
-        
-    
+
 
 def system_detail(system_id):
     return ds.get_system_by_id(system_id)
