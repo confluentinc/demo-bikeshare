@@ -3,7 +3,10 @@ from typing_extensions import Annotated
 
 from rich import print
 
+from journey.globals import GLOBALS
 from journey.data.source import gbfs
+from journey.data.kafka.producer import produce
+from journey.data.kafka.utils import create_topic_if_needed
 from journey.cli.textual.systems import SystemsTreeApp
 
 bikes_menu = Typer()
@@ -49,6 +52,12 @@ def station_data(system_id:Annotated[str, Option(help='ID of system to use - use
         exit(1)
         
     print(f'{len(stations)} stations found in system {system_id}')
-    import pdb; pdb.set_trace()
     
+    ## transform stations to match producer's expected format
+    stations_by_id = {}
+    for station in stations:
+        stations_by_id[station['station_id']] = station
     
+    topic = f'{system_id}.stations.info'
+    create_topic_if_needed(GLOBALS['cc_config'], topic)
+    produce(GLOBALS['cc_config'], topic, stations_by_id)

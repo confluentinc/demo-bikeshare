@@ -15,7 +15,7 @@ def parse_cc_config_file(config_file):
                     conf[parameter] = value.strip()
     return conf
 
-def create_topic(conf, topic, num_partitions=1, replication_factor=3):
+def create_topic_if_needed(conf, topic, num_partitions=1, replication_factor=3):
     cli = AdminClient(conf)
 
     futures = cli.create_topics([NewTopic(topic, num_partitions=num_partitions, replication_factor=replication_factor)])
