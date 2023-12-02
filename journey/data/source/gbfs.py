@@ -54,21 +54,15 @@ def system_stations(system_id):
 
     return client.request_feed('station_information').get('data').get('stations')
 
-def system_station_status(system_id, station_id):
+def system_stations_statuses(system_id):
     client = ds.instantiate_client(system_id)
     if client is None:
         return None
 
     feed = client.request_feed('station_information')
-    items = feed.get('data').get('stations')
-
-    try:
-        result = next(filter(lambda x: str(x.get('station_id')) == station_id, items))
-    except StopIteration:
-        return None
-
-    result.update({'last_updated': feed.get('last_updated'), 'ttl': feed.get('ttl')})
-    return result
+    stations = feed.get('data').get('stations')
+    
+    return stations
 
 
 

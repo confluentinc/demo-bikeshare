@@ -1,6 +1,10 @@
 from confluent_kafka import KafkaError
 from confluent_kafka.admin import AdminClient, NewTopic
 
+def filter_timeout_property(config):
+    _config = config.copy()
+    _config.pop('session.timeout.ms') # remove session timeout as it causes an annoying warning
+    return _config
 
 def parse_cc_config_file(config_file):
     ## remove schema registry params from config as it causes an error later
@@ -15,8 +19,9 @@ def parse_cc_config_file(config_file):
                     conf[parameter] = value.strip()
     return conf
 
-def create_topic_if_needed(conf, topic, num_partitions=1, replication_factor=3):
-    cli = AdminClient(conf)
+def create_topic_if_needed(config, topic, num_partitions=1, replication_factor=3):
+    config = filter_timeout_property(config)
+    cli = AdminClient(config)
 
     futures = cli.create_topics([NewTopic(topic, num_partitions=num_partitions, replication_factor=replication_factor)])
     for topic, future in futures.items():
