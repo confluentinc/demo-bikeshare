@@ -24,7 +24,7 @@ def systems():
                 system['Location'] = system['Location'].replace(', US', '')
                 _, state = system['Location'].split(',')
             except ValueError:
-                if  system['Location'].endswith('NS'):
+                if system['Location'].endswith('NS'):
                     # filter out bad systems/locations
                     continue
                 print(system)
@@ -82,26 +82,21 @@ def system_stations_statuses(system_id):
     for _station in _stations:
         ## add global properties to each data entry as they're going to be split up
         station = {}
-        station['last_updated'] = last_updated.timestamp()
+        station['last_updated'] = last_updated.timestamp() # convert to posix
         station['ttl'] = ttl 
         station['version'] = version
         
-        # enrich with basic metadata
+        ## enrich with basic metadata
         _station.update(metadata.get(_station['station_id']))
+        
+        ## convert ints to bools for relevant fields
         for k, v in _station.items():
-            
-            # data comes back as ints but need to convert to bool
             if k.startswith('is_'):
                 _station[k] = bool(v)
-        
-        # print(_station)
-        # import pdb; pdb.set_trace()
+
         station['station'] = _station
         
         stations.append(station)
-
-    # print(_stations)    
-    # import pdb; pdb.set_trace()
     
     return stations
 

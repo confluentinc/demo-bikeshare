@@ -9,7 +9,7 @@ from confluent_kafka.schema_registry.json_schema import JSONSerializer
 
 from journey.data.kafka.utils import filter_timeout_property
 
-def create_topic_if_needed(cc_config, topic, num_partitions=1, replication_factor=3):
+def create_topic(cc_config, topic, num_partitions=1, replication_factor=3):
     cc_config = filter_timeout_property(cc_config)
     cli = AdminClient(cc_config)
 
@@ -24,6 +24,8 @@ def create_topic_if_needed(cc_config, topic, num_partitions=1, replication_facto
             if e.args[0].code() != KafkaError.TOPIC_ALREADY_EXISTS:
                 print(f"Failed to create topic {topic}: {e}")
                 exit(1)
+            else:
+                print(f'Topic {topic} already exists')
 
 def serializer_for_schema(sr_config, schema_file, topic):
     sr_client = SchemaRegistryClient(sr_config)

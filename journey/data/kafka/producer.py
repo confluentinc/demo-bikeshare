@@ -14,6 +14,7 @@ def _generic_error_printing_callback(err, msg):
 
 def produce(config:dict, topic:str, data:dict, batch_size:int=50, delivery_callback=_generic_error_printing_callback, data_seralizer=None):
     assert isinstance(data,dict)
+    assert callable(delivery_callback)
     
     config = filter_timeout_property(config)    
     producer = Producer(config)

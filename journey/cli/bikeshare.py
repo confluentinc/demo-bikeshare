@@ -9,7 +9,7 @@ from rich.status import Status
 from journey.globals import GLOBALS
 from journey.data.source import gbfs
 from journey.data.kafka.producer import produce
-from journey.data.kafka.admin import create_topic_if_needed, serializer_for_schema
+from journey.data.kafka.admin import create_topic, serializer_for_schema
 from journey.cli.textual.systems import SystemsTreeApp
 
 bikes_menu = Typer()
@@ -59,7 +59,7 @@ def station_data(system_id:Annotated[str, Option(help='ID of system to use - use
     print(f'{len(stations)} stations found in system {system_id}')
     
     topic = f'{system_id}.station.info'
-    create_topic_if_needed(GLOBALS['cc_config'], topic)
+    create_topic(GLOBALS['cc_config'], topic)
     produce(GLOBALS['cc_config'], topic, stations)
     
 @produce_menu.command()
@@ -67,7 +67,7 @@ def station_statuses(system_id:Annotated[str, Option(help='ID of system to use -
                      produce_forever:Annotated[bool, Option(help='Produce data forever')]=False,
                      produce_interval:Annotated[int, Option(help='Interval in seconds to produce data')]=60):
     '''
-    Load station statuses
+    (Continuously) load station statuses
     '''
     
     if system_id == '':
@@ -92,7 +92,7 @@ def station_statuses(system_id:Annotated[str, Option(help='ID of system to use -
     
     topic = f'{system_id}.station.status.raw'
     seralizer = serializer_for_schema(GLOBALS['sr_config'], 'schemas/station_status_raw.json', topic)
-    create_topic_if_needed(GLOBALS['cc_config'], topic)
+    create_topic(GLOBALS['cc_config'], topic)
     
     while True:
         produce(GLOBALS['cc_config'], topic, stations_by_name, data_seralizer=seralizer)
