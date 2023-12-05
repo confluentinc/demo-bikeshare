@@ -1,5 +1,7 @@
-from gbfs.services import SystemDiscoveryService
+from datetime import datetime
+
 from rich import print
+from gbfs.services import SystemDiscoveryService
 
 ds = SystemDiscoveryService()
 
@@ -52,15 +54,54 @@ def system_stations(system_id):
     if client is None:
         return None
 
-    return client.request_feed('station_information').get('data').get('stations')
+    data = client.request_feed('station_information').get('data').get('stations')
+    return data
+
+def system_stations_by_id(system_id):
+    stations = system_stations(system_id)
+    stations_by_id = {}
+    for station in stations:
+        stations_by_id[station['station_id']] = station
+    return stations_by_id
 
 def system_stations_statuses(system_id):
     client = ds.instantiate_client(system_id)
     if client is None:
         return None
 
-    feed = client.request_feed('station_information')
-    stations = feed.get('data').get('stations')
+    feed = client.request_feed('station_status')
+    _stations = feed.get('data').get('stations')
+    metadata = system_stations_by_id(system_id)
+    
+    ## get global properties
+    last_updated:datetime = feed.get('last_updated')
+    ttl = feed.get('ttl')
+    version = feed.get('version')
+    stations = []
+    
+    for _station in _stations:
+        ## add global properties to each data entry as they're going to be split up
+        station = {}
+        station['last_updated'] = last_updated.timestamp()
+        station['ttl'] = ttl 
+        station['version'] = version
+        
+        # enrich with basic metadata
+        _station.update(metadata.get(_station['station_id']))
+        for k, v in _station.items():
+            
+            # data comes back as ints but need to convert to bool
+            if k.startswith('is_'):
+                _station[k] = bool(v)
+        
+        # print(_station)
+        # import pdb; pdb.set_trace()
+        station['station'] = _station
+        
+        stations.append(station)
+
+    # print(_stations)    
+    # import pdb; pdb.set_trace()
     
     return stations
 
@@ -107,3 +148,7 @@ def system_station_detail(system_id, station_id):
     result.update(status)
 
     return result
+
+
+if __name__ == '__main__':
+    import pdb; pdb.set_trace()

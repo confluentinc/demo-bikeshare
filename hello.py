@@ -34,7 +34,7 @@ def create_topic(conf, topic, num_partitions=1, replication_factor=3):
                 exit(1)
 
 
-def produce(config, topic):
+def produce(config, topic, data):
     producer = Producer(config)
     
     try:

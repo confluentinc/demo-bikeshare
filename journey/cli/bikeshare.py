@@ -1,12 +1,15 @@
+from time import sleep
+
 from typer import Typer, Option
 from typing_extensions import Annotated
 
 from rich import print
+from rich.status import Status
 
 from journey.globals import GLOBALS
 from journey.data.source import gbfs
 from journey.data.kafka.producer import produce
-from journey.data.kafka.utils import create_topic_if_needed
+from journey.data.kafka.admin import create_topic_if_needed, seralizer_for_schema
 from journey.cli.textual.systems import SystemsTreeApp
 
 bikes_menu = Typer()
@@ -32,9 +35,7 @@ def systems():
     '''
     Show tree of different systems that can be queried
     '''
-    systems_tree = SystemsTreeApp(gbfs.systems())
-    label = systems_tree.run()
-    print(f'You selected {label} - use --system-id={_system_id_from_label(label)} to target this system in other commands')
+    _systems_tree_controller_dialog()
     
 @produce_menu.command()
 def station_data(system_id:Annotated[str, Option(help='ID of system to use - use `journey bikeshare systems` to see a list')]=''):
@@ -47,7 +48,7 @@ def station_data(system_id:Annotated[str, Option(help='ID of system to use - use
     
     valid = True
     try:
-        stations = gbfs.system_stations(system_id)
+        stations = gbfs.system_stations_by_id(system_id)
     except:
         valid = False
         
@@ -57,17 +58,14 @@ def station_data(system_id:Annotated[str, Option(help='ID of system to use - use
         
     print(f'{len(stations)} stations found in system {system_id}')
     
-    ## transform stations to match producer's expected format
-    stations_by_id = {}
-    for station in stations:
-        stations_by_id[station['station_id']] = station
-    
-    topic = f'{system_id}.stations.info'
+    topic = f'{system_id}.station.info'
     create_topic_if_needed(GLOBALS['cc_config'], topic)
-    produce(GLOBALS['cc_config'], topic, stations_by_id)
+    produce(GLOBALS['cc_config'], topic, stations)
     
 @produce_menu.command()
-def station_statuses(system_id:Annotated[str, Option(help='ID of system to use - use `journey bikeshare systems` to see a list')]=''):
+def station_statuses(system_id:Annotated[str, Option(help='ID of system to use - use `journey bikeshare systems` to see a list')]='',
+                     produce_forever:Annotated[bool, Option(help='Produce data forever')]=False,
+                     produce_interval:Annotated[int, Option(help='Interval in seconds to produce data')]=60):
     '''
     Load station statuses
     '''
@@ -84,12 +82,22 @@ def station_statuses(system_id:Annotated[str, Option(help='ID of system to use -
     if not valid or stations is None or len(stations) == 0:
         print(f'No stations found in system {system_id} - please try another system')
         exit(1)
+    
+    print(f'{len(stations)} stations found in system {system_id}')
   
     ## transform stations to match producer's expected format
-    stations_by_id = {}
+    stations_by_name = {}
     for station in stations:
-        stations_by_id[station['name']] = station
+        stations_by_name[station['station']['name']] = station
     
-    topic = f'{system_id}.stations.status.raw'
+    topic = f'{system_id}.station.status.raw'
+    seralizer = seralizer_for_schema(GLOBALS['sr_config'], 'schemas/station_status_raw.json', topic)
     create_topic_if_needed(GLOBALS['cc_config'], topic)
-    produce(GLOBALS['cc_config'], topic, stations_by_id)
+    
+    while True:
+        produce(GLOBALS['cc_config'], topic, stations_by_name, data_seralizer=seralizer)
+        if produce_forever:
+            with Status(f'Waiting {produce_interval} seconds before next produce', spinner='dqpb'):
+                sleep(produce_interval)
+        else:
+            break
