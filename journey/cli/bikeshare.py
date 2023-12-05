@@ -9,7 +9,7 @@ from rich.status import Status
 from journey.globals import GLOBALS
 from journey.data.source import gbfs
 from journey.data.kafka.producer import produce
-from journey.data.kafka.admin import create_topic_if_needed, seralizer_for_schema
+from journey.data.kafka.admin import create_topic_if_needed, serializer_for_schema
 from journey.cli.textual.systems import SystemsTreeApp
 
 bikes_menu = Typer()
@@ -91,7 +91,7 @@ def station_statuses(system_id:Annotated[str, Option(help='ID of system to use -
         stations_by_name[station['station']['name']] = station
     
     topic = f'{system_id}.station.status.raw'
-    seralizer = seralizer_for_schema(GLOBALS['sr_config'], 'schemas/station_status_raw.json', topic)
+    seralizer = serializer_for_schema(GLOBALS['sr_config'], 'schemas/station_status_raw.json', topic)
     create_topic_if_needed(GLOBALS['cc_config'], topic)
     
     while True:

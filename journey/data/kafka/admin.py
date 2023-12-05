@@ -25,7 +25,7 @@ def create_topic_if_needed(cc_config, topic, num_partitions=1, replication_facto
                 print(f"Failed to create topic {topic}: {e}")
                 exit(1)
 
-def seralizer_for_schema(sr_config, schema_file, topic):
+def serializer_for_schema(sr_config, schema_file, topic):
     sr_client = SchemaRegistryClient(sr_config)
     
     with open(schema_file) as fh:
