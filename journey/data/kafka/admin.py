@@ -16,7 +16,7 @@ def create_topic(cc_config, topic, num_partitions=1, replication_factor=3):
     futures = cli.create_topics([NewTopic(topic, num_partitions=num_partitions, replication_factor=replication_factor)])
     for topic, future in futures.items():
         try:
-            future.result()  # The result itself is None
+            future.result(timeout=10)  # The result itself is None
             print(f'Topic {topic} created')
         except Exception as e:
             # Continue if error code TOPIC_ALREADY_EXISTS, which may be true
