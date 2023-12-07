@@ -1,14 +1,12 @@
-from time import sleep
-
 from typer import Typer, Option
 from typing_extensions import Annotated
+from uvloop import run
 
 from rich import print
-from rich.status import Status
 
 from journey.globals import GLOBALS
 from journey.data.source import gbfs
-from journey.data.kafka.producer import produce
+from journey.data.kafka.producer import produce, multiple_producer_fanout
 from journey.data.kafka.admin import create_topic, serializer_for_schema
 from journey.cli.textual.systems import SystemsTreeApp
 
@@ -65,7 +63,7 @@ def station_data(system_id:Annotated[str, Option(help='ID of system to use - use
 @produce_menu.command()
 def station_statuses(system_id:Annotated[str, Option(help='ID of system to use - use `journey bikeshare systems` to see a list')]='',
                      produce_forever:Annotated[bool, Option(help='Produce data forever')]=False,
-                     produce_interval:Annotated[int, Option(help='Interval in seconds to produce data')]=60):
+                     fanout_size:Annotated[int, Option(help='Number of producers to fan out to - reduce number if you see errors')]=6):
     '''
     (Continuously) load station statuses
     '''
@@ -95,9 +93,7 @@ def station_statuses(system_id:Annotated[str, Option(help='ID of system to use -
     create_topic(GLOBALS['cc_config'], topic)
     
     while True:
-        produce(GLOBALS['cc_config'], topic, stations_by_name, data_seralizer=seralizer)
-        if produce_forever:
-            with Status(f'Waiting {produce_interval} seconds before next produce', spinner='dqpb'):
-                sleep(produce_interval)
-        else:
+        run(multiple_producer_fanout(GLOBALS['cc_config'], topic, stations_by_name, fanout_size=fanout_size, data_seralizer=seralizer))
+        #run(produce(GLOBALS['cc_config'], topic, stations_by_name, data_seralizer=seralizer))
+        if not produce_forever:
             break
