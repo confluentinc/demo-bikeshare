@@ -1,7 +1,7 @@
 from datetime import datetime
 from time import sleep
 
-from typer import Typer, Option, Argument
+from typer import Typer, Option
 from typing_extensions import Annotated
 from uvloop import run
 
@@ -10,17 +10,14 @@ from rich.status import Status
 
 from journey.globals import GLOBALS
 from journey.data.source import gbfs
-from journey.data.flink import create_compute_pool_if_needed, create_station_status_tables
 from journey.data.kafka.producer import produce, multiple_producer_fanout
 from journey.data.kafka.admin import create_topic, serializer_for_schema
 from journey.cli.textual.systems import SystemsTreeApp
 
 bikes_menu = Typer()
 produce_menu = Typer()
-process_menu = Typer()
 
 bikes_menu.add_typer(produce_menu, name="produce")
-bikes_menu.add_typer(process_menu, name="process")
 
 _system_id_from_label = lambda label: label.split('(')[-1].replace(')', '')
 
@@ -103,16 +100,14 @@ def station_statuses(system_id:Annotated[str, Option(help='ID of system to use -
     
     stations_by_name, ttl = _stations_data_by_name(system_id)
     
-    topic = f'{system_id}_station_status'
+    topic = f'station_status'
     seralizer = serializer_for_schema(GLOBALS['sr_config'], 'schemas/station_status_raw.json', topic)
     create_topic(GLOBALS['cc_config'], topic)
     
     while True:
         start = datetime.now()
         run(multiple_producer_fanout(GLOBALS['cc_config'], topic, stations_by_name, fanout_size=fanout_size, data_seralizer=seralizer))
-        if not produce_forever:
-            break
-        else:
+        if produce_forever:
             ## check to see if a full minute has elapsed - if not, wait until it has
             time_spent = (datetime.now() - start).total_seconds()
             if time_spent < ttl:
@@ -120,19 +115,8 @@ def station_statuses(system_id:Annotated[str, Option(help='ID of system to use -
                 with Status(f'Waiting {time_needed} seconds before next produce', spinner='dqpb'):
                     sleep(time_needed)
             
+            ## get the a fresh batch of data and do it again!
             stations_by_name, ttl = _stations_data_by_name(system_id)
-            
-@process_menu.command()
-def branch_stations_by_status(environment_id:Annotated[str, Argument(help='ID of environment to use - use `confluent env list` to see a list or copy from web UI')],
-                              cluster_name:Annotated[str, Option(help='Name of cluster to use - use `confluent kafka cluster list` to see a list or copy from web UI')]='cluster_0',
-                              cloud:Annotated[str, Option(help='Cloud to use')]='aws',
-                              region:Annotated[str, Option(help='Region to use')]='us-east-2',
-                              system_id:Annotated[str, Option(help='ID of system to use - use `journey bikeshare systems` to see a list')]=''):
-    '''
-    Create a Flink compute pool, two tables and split raw station status into online and offline stations
-    '''
-    if system_id == '':
-        system_id = _systems_tree_controller_dialog()
-        
-    compute_pool_id = create_compute_pool_if_needed('bikeshare-flink', environment_id, cloud, region)
-    create_station_status_tables(environment_id, compute_pool_id, cluster_name, system_id, cloud, region)
+        else:
+            break
+

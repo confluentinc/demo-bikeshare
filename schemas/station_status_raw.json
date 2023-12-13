@@ -25,6 +25,22 @@
           "description": "Identifier of a station.",
           "type": "string"
         },
+        "name": {
+          "description": "Name of a station.",
+          "type": "string"
+        },
+        "lat": {
+          "description": "Latitude of a station.",
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "lon": {
+          "description": "Longitude of a station.",
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
         "num_bikes_available": {
           "description": "Number of vehicles of any type physically available for rental at the station.",
           "type": "integer",
