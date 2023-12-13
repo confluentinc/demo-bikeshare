@@ -101,7 +101,7 @@ def station_statuses(system_id:Annotated[str, Option(help='ID of system to use -
     stations_by_name, ttl = _stations_data_by_name(system_id)
     
     topic = f'station_status'
-    seralizer = serializer_for_schema(GLOBALS['sr_config'], 'schemas/station_status_raw.json', topic)
+    seralizer = serializer_for_schema(GLOBALS['sr_config'], 'schemas/station_status.json', topic)
     create_topic(GLOBALS['cc_config'], topic)
     
     while True:

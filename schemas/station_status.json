@@ -46,6 +46,11 @@
           "type": "integer",
           "minimum": 0
         },
+        "capacity": {
+          "description": "Total number of vehicle docks at the station.",
+          "type": "integer",
+          "minimum": 0
+        },
         "vehicle_types_available": {
           "description": "Array of objects displaying the total number of each vehicle type at the station (added in v2.1-RC).",
           "type": "array",

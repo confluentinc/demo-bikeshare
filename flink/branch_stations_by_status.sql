@@ -3,8 +3,9 @@ CREATE TABLE station_online (
   name STRING NOT NULL,
   latitude DOUBLE NOT NULL,
   longitude DOUBLE NOT NULL,
-  num_docks_available BIGINT,
+  capacity BIGINT,
   num_bikes_available BIGINT,
+  availability_ratio DOUBLE,
   last_updated BIGINT NOT NULL,
   ttl BIGINT NOT NULL
 );
@@ -19,12 +20,25 @@ CREATE TABLE station_offline (
 );
 
 INSERT INTO station_online
-SELECT station.station_id, station.name, station.lat, station.lon, station.num_docks_available, station.num_bikes_available, last_updated, ttl 
+SELECT station.station_id, 
+       station.name, 
+       station.lat, 
+       station.lon, 
+       station.capacity, 
+       station.num_bikes_available, 
+       station.num_bikes_available * 1.0 / station.capacity as availability_ratio,
+       last_updated, 
+       ttl 
 FROM station_status 
 WHERE station.is_renting;
 
 INSERT INTO station_offline
-SELECT station.station_id, station.name, station.lat, station.lon, last_updated, ttl 
+SELECT station.station_id, 
+       station.name, 
+       station.lat, 
+       station.lon, 
+       last_updated, 
+       ttl 
 FROM station_status 
 WHERE NOT station.is_renting;
 
