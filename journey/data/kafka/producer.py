@@ -49,24 +49,3 @@ async def multiple_producer_fanout(config:dict, topic:str, data:dict, fanout_siz
         if counter % fanout_size == 0:
             await gather(*tasks)
             tasks = []
-        
-
-def produce(config:dict, topic:str, data:dict, batch_size:int=50, delivery_callback=_generic_error_printing_callback, data_seralizer=None):
-    assert isinstance(data,dict)
-    assert callable(delivery_callback)
-    
-    config = filter_timeout_property(config)    
-    producer = Producer(config)
-    data_seralizer = data_seralizer or dumps # default to basic json for topics without schemas
-    
-    try:
-        counter = 0
-        for key, object in track(data.items(), description=f'Sending {len(data)} messages to {topic}'):
-            producer.produce(topic, key=key, value=data_seralizer(object, SerializationContext(topic, MessageField.VALUE)), callback=delivery_callback)
-            counter += 1
-            
-            if counter % batch_size == 0:
-                producer.poll()
-    finally:
-        producer.flush()
-        
