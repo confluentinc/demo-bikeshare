@@ -7,7 +7,7 @@ from confluent_kafka.serialization import SerializationContext, MessageField
 from rich import print
 from rich.progress import track
 
-from journey.data.kafka.utils import filter_timeout_property
+from bikeshare.data.kafka.utils import filter_timeout_property
 
 def _generic_error_printing_callback(err, msg):
     if err is not None:

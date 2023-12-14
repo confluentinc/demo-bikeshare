@@ -3,7 +3,7 @@ from time import sleep
 
 from typer import Typer, Option
 from typing_extensions import Annotated
-from uvloop import run
+from uvloop import run as async_run
 
 from rich import print
 from rich.status import Status
@@ -80,7 +80,7 @@ def produce(system_id:Annotated[str, Option(help='ID of system to use - use `jou
     
     while True:
         start = datetime.now()
-        run(multiple_producer_fanout(GLOBALS['cc_config'], topic, stations_by_name, fanout_size=fanout_size, data_seralizer=seralizer))
+        async_run(multiple_producer_fanout(GLOBALS['cc_config'], topic, stations_by_name, fanout_size=fanout_size, data_seralizer=seralizer))
         if produce_forever:
             ## check to see if a full minute has elapsed - if not, wait until it has
             time_spent = (datetime.now() - start).total_seconds()

@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "journey"
+name = "bikeshare"
 version = "0.1.0"
 description = ""
 authors = ["Adi Wabisabi <awabisabi@confluent.io>"]
 readme = "README.md"
 
 [tool.poetry.scripts]
-journey = "journey.cli:run"
+bikeshare = "bikeshare.cli:run"
 
 [tool.poetry.dependencies]
 python = "^3.12"
