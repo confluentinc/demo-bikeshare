@@ -1,0 +1,55 @@
+{
+    "fields": [
+      {
+        "name": "id",
+        "type": "string"
+      },
+      {
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "name": "latitude",
+        "type": "double"
+      },
+      {
+        "name": "longitude",
+        "type": "double"
+      },
+      {
+        "default": null,
+        "name": "capacity",
+        "type": [
+          "null",
+          "long"
+        ]
+      },
+      {
+        "default": null,
+        "name": "num_bikes_available",
+        "type": [
+          "null",
+          "long"
+        ]
+      },
+      {
+        "default": null,
+        "name": "availability_ratio",
+        "type": [
+          "null",
+          "double"
+        ]
+      },
+      {
+        "name": "last_updated",
+        "type": "long"
+      },
+      {
+        "name": "ttl",
+        "type": "long"
+      }
+    ],
+    "name": "record",
+    "namespace": "org.apache.flink.avro.generated",
+    "type": "record"
+  }

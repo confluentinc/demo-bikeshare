@@ -10,10 +10,11 @@ from rich.status import Status
 
 from bikeshare.globals import GLOBALS
 from bikeshare.data.source import gbfs
+from bikeshare.data.kafka.consumer import consume as _consume
 from bikeshare.data.kafka.producer import multiple_producer_fanout
-from bikeshare.data.kafka.admin import create_topic, serializer_for_schema
-from bikeshare.cli.textual.systems import SystemsTreeApp
+from bikeshare.data.kafka.admin import create_topic, serializer_for_json_schema, deserializer_for_flink_avro_schema
 from bikeshare.data.kafka.utils import cc_config, sr_config
+from bikeshare.cli.textual.systems import SystemsTreeApp
 
 cli = Typer()
 
@@ -60,7 +61,6 @@ def systems():
     '''
     _systems_tree_controller_dialog()
     
-    
 @cli.command()
 def produce(system_id:Annotated[str, Option(help='ID of system to use - use `journey bikeshare systems` to see a list')]='',
             produce_forever:Annotated[bool, Option(help='Produce data forever')]=False,
@@ -75,7 +75,7 @@ def produce(system_id:Annotated[str, Option(help='ID of system to use - use `jou
     stations_by_name, ttl = _stations_data_by_name(system_id)
     
     topic = f'station_status'
-    seralizer = serializer_for_schema(GLOBALS['sr_config'], 'schemas/station_status.json', topic)
+    seralizer = serializer_for_json_schema(GLOBALS['sr_config'], 'schemas/station_status.json', topic)
     create_topic(GLOBALS['cc_config'], topic)
     
     while True:
@@ -94,12 +94,20 @@ def produce(system_id:Annotated[str, Option(help='ID of system to use - use `jou
         else:
             break
 
-
+@cli.command()
+def consume():
+    '''
+    Show online stations
+    '''
+    deserializer = deserializer_for_flink_avro_schema(GLOBALS['sr_config'], 'schemas/station_online.avsc')
+    for message in _consume(GLOBALS['cc_config'], 'station_online', deserializer):
+        print(message)
 
 @cli.callback()
 def callback(confluent_cloud_config_file:str='client.properties'):
     '''
-    Demo putting Travel related data (bikes and planes) into Confluent Cloud
+    Function gets ran before command, used for setting up global state
+    or other settings that are global that are needed for downstream tasks
     '''
     global GLOBALS
     GLOBALS['cc_config'] = cc_config(confluent_cloud_config_file)
