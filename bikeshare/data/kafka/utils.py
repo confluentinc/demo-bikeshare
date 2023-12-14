@@ -21,7 +21,6 @@ def cc_config(config_file):
 
 def sr_config(config_file):
     config = _read_config_file(config_file, schema_registry=True)
-    # import pdb; pdb.set_trace()
     config.pop('basic.auth.credentials.source') # I guess nothing uses this?
     url = config.pop('schema.registry.url')
     config['url'] = url # because the `SchemaRegistryClient` expects `url` instead of `schema.registry.url`

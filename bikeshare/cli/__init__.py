@@ -8,13 +8,14 @@ from uvloop import run
 from rich import print
 from rich.status import Status
 
-from journey.globals import GLOBALS
-from journey.data.source import gbfs
-from journey.data.kafka.producer import multiple_producer_fanout
-from journey.data.kafka.admin import create_topic, serializer_for_schema
-from journey.cli.textual.systems import SystemsTreeApp
+from bikeshare.globals import GLOBALS
+from bikeshare.data.source import gbfs
+from bikeshare.data.kafka.producer import multiple_producer_fanout
+from bikeshare.data.kafka.admin import create_topic, serializer_for_schema
+from bikeshare.cli.textual.systems import SystemsTreeApp
+from bikeshare.data.kafka.utils import cc_config, sr_config
 
-bikes_menu = Typer()
+cli = Typer()
 
 _system_id_from_label = lambda label: label.split('(')[-1].replace(')', '')
 
@@ -52,7 +53,7 @@ def _stations_data_by_name(system_id:str) -> (dict, int):
         
     return stations_by_name, ttl
 
-@bikes_menu.command()
+@cli.command()
 def systems():
     '''
     Show tree of different systems that can be queried
@@ -60,7 +61,7 @@ def systems():
     _systems_tree_controller_dialog()
     
     
-@bikes_menu.command()
+@cli.command()
 def produce(system_id:Annotated[str, Option(help='ID of system to use - use `journey bikeshare systems` to see a list')]='',
             produce_forever:Annotated[bool, Option(help='Produce data forever')]=False,
             fanout_size:Annotated[int, Option(help='Number of producers to fan out to - reduce number if you see errors - increase to improve performance')]=6):
@@ -93,3 +94,17 @@ def produce(system_id:Annotated[str, Option(help='ID of system to use - use `jou
         else:
             break
 
+
+
+@cli.callback()
+def callback(confluent_cloud_config_file:str='client.properties'):
+    '''
+    Demo putting Travel related data (bikes and planes) into Confluent Cloud
+    '''
+    global GLOBALS
+    GLOBALS['cc_config'] = cc_config(confluent_cloud_config_file)
+    GLOBALS['sr_config'] = sr_config(confluent_cloud_config_file)
+
+def run():
+    cli()
+    

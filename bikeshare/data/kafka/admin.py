@@ -7,7 +7,7 @@ from confluent_kafka.admin import AdminClient, NewTopic
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.json_schema import JSONSerializer
 
-from journey.data.kafka.utils import filter_timeout_property
+from bikeshare.data.kafka.utils import filter_timeout_property
 
 def create_topic(cc_config, topic, num_partitions=1, replication_factor=3):
     cc_config = filter_timeout_property(cc_config)

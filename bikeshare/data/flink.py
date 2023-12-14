@@ -10,7 +10,7 @@ class ConfluentFlinkCLIException(Exception):
 
 def __remove_excess_whitespace(text: str) -> str:
     text = text.strip()
-    text = sub(r'\s+', ' ', text) # remove excess whitespace between words
+    text = sub(r'\s+', ' ', text) # remove excess whitespace (indentation) between words
     text = sub(r'\\n', '', text) # remove newlines
     return text
 
@@ -19,7 +19,6 @@ def _get_query_from_file(filepath:str) -> str:
         return __remove_excess_whitespace(fh.read())
 
 def _run_confluent_flink_cli_command(command:list) -> dict|list:
-
     _cmd = ['confluent', 'flink'] + command + ['-o', 'json']
     with Popen(_cmd, stdout=PIPE, stderr=PIPE) as proc:
         out, err = proc.communicate()
