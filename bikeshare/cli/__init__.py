@@ -95,12 +95,13 @@ def produce(system_id:Annotated[str, Option(help='ID of system to use - use `jou
             break
 
 @cli.command()
-def consume():
+def consume(consumer_id:Annotated[str, Option(help='ID for consumer to use')]='live-updates-consumer',
+            poll_interval:Annotated[int, Option(help='Poll interval in seconds')]=10):
     '''
     Show online stations
     '''
     deserializer = deserializer_for_flink_avro_schema(GLOBALS['sr_config'], 'schemas/station_online.avsc')
-    for message in _consume(GLOBALS['cc_config'], 'station_online', deserializer):
+    for message in _consume(GLOBALS['cc_config'], 'station_online', deserializer, consumer_id, poll_interval):
         print(message)
 
 @cli.callback()
