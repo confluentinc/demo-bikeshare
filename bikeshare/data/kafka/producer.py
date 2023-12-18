@@ -19,7 +19,7 @@ async def _flush_and_kill_producer(producer:Producer):
     del producer ## frees up file handlers 
 
 ## fanout_size is finnicky and it's not clear what the best value is.  6 seems to work well on my machine for the citibike station status data    
-async def multiple_producer_fanout(config:dict, topic:str, data:dict, fanout_size:int=6, set_last_updated_to_now:bool=True,
+async def multiple_producer_fanout(config:dict, topic:str, data:dict, fanout_size:int=6,
                                    delivery_callback=_generic_error_printing_callback, data_seralizer=None):
     '''
     Producer is created per message with the same client.id as the key of the message.
@@ -43,13 +43,6 @@ async def multiple_producer_fanout(config:dict, topic:str, data:dict, fanout_siz
         
         config['client.id'] = name
         producer = Producer(config)
-        
-        if set_last_updated_to_now:
-            ## a little fakery to make the consumer look a little more active
-            ## in large data batches (NYC) it can take ~10 mins to process all the data
-            ## and in the consumer table we're sorting by this, so it wouldn't look right for each
-            ## batch to be 10 mins old by the end - plus it ruins the whole "real-time" feel
-            object['last_updated'] = int(datetime.now().timestamp())
         
         producer.produce(topic, key=name, value=data_seralizer(object, SerializationContext(topic, MessageField.VALUE)), callback=delivery_callback)
         tasks.append(event_loop.create_task(_flush_and_kill_producer(producer)))

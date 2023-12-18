@@ -9,6 +9,7 @@ from rich import print
 from rich.status import Status
 from rich.table import Table
 from rich.live import Live
+from rich.text import Text
 
 from bikeshare.globals import GLOBALS
 from bikeshare.data.source import gbfs
@@ -22,12 +23,34 @@ cli = Typer()
 
 _system_id_from_label = lambda label: label.split('(')[-1].replace(')', '')
 
-def _stations_table(headers, data, sort_by:str='last_updated', desc:bool=True):
+def _color_station_table(row):
+    if row['availability_ratio'] >= GLOBALS['station_availability_high']:
+        color = GLOBALS['station_availability_color']['high']
+    elif row['availability_ratio'] <= GLOBALS['station_availability_low']:
+        color = GLOBALS['station_availability_color']['low']
+    else:
+        color = GLOBALS['station_availability_color']['medium']
+        
+    _row = {}
+    for k, v in row.items():
+        text = Text(str(v))
+        text.stylize(color)
+        _row[k] = text
+        
+    return _row
+        
+        
+
+def _stations_table(headers, data, sort_by:str='last_updated', desc:bool=True, hidden_fields:list|None=None, colorer:callable=None):
+    hidden_fields = hidden_fields or [] # collection types as defaults cause weird errors as they're mutable and persistent across calls
+    colorer = colorer or (lambda x: {k:str(v) for k, v in x.items()}) # default to no color and ensure string
     _data = [v for v in data.values()]
     sorted_data = sorted(_data, key=lambda x: x[sort_by], reverse=desc)
     table = Table(*headers, show_header=True)
+    
     for row in sorted_data:
-        table.add_row(*[str(value) for value in row.values()])
+        row = colorer(row)
+        table.add_row(*[v for k, v in row.items() if k not in hidden_fields])
     
     return table
     
@@ -109,13 +132,15 @@ def produce(system_id:Annotated[str, Option(help='ID of system to use - use `jou
 def consume(consumer_id:Annotated[str, Option(help='ID for consumer to use')]='live-updates-consumer',
             poll_interval:Annotated[int, Option(help='Poll interval in seconds')]=1,
             topic:Annotated[str, Option(help='Topic to consume from')]='station_online', 
-            debug:Annotated[bool, Option(help='Show debug messages')]=False):
+            debug:Annotated[bool, Option(help='Show debug messages')]=False,
+            hidden_fields:Annotated[str, Option(help='Comma delimited list of fields to hide from output')]='id,availability_ratio,last_updated,ttl,received_at'):
     '''
     Show online stations
     '''
     deserializer = deserializer_for_flink_avro_schema(GLOBALS['sr_config'], f'schemas/{topic}.avsc')
     first_message = None
     data = {}
+    hidden_fields = hidden_fields.split(',') if hidden_fields else []
     
     with Status(f'Waiting for messages from topic {topic}', spinner='pong'):
         while first_message is None:
@@ -123,19 +148,21 @@ def consume(consumer_id:Annotated[str, Option(help='ID for consumer to use')]='l
                 if debug:
                     print(f'message: {message}')
                 if message is not None:
+                    message['received_at'] = int(datetime.now().timestamp())
                     first_message = message
                     break
     
     data[first_message['id']] = first_message
-    headers = first_message.keys()
+    headers = [key for key in first_message.keys() if key not in hidden_fields]
     
-    with Live(_stations_table(headers, data), auto_refresh=False) as live:
+    with Live(_stations_table(headers, data, sort_by='received_at', hidden_fields=hidden_fields, colorer=_color_station_table), auto_refresh=False) as live:
         for message in _consume(GLOBALS['cc_config'], topic, deserializer, consumer_id, poll_interval):
             if debug:
                 live.console.print(f'message: {message}')
             if message is not None:
+                message['received_at'] = int(datetime.now().timestamp())
                 data[message['id']] = message
-                live.update(_stations_table(headers, data), refresh=True)
+                live.update(_stations_table(headers, data, sort_by='received_at', hidden_fields=hidden_fields, colorer=_color_station_table), refresh=True)
 
 @cli.callback()
 def global_callback(confluent_cloud_config_file:str='client.properties'):
