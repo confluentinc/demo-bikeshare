@@ -25,7 +25,7 @@ def consume(cc_config, topic, deseralizer, consumer_id, poll_interval):
                 msg_deseralized = deseralizer(msg.value(),  SerializationContext(msg.topic(), MessageField.VALUE))
                 yield msg_deseralized
             else:
-                print('No messages received')
+                yield msg
             
     finally:
         consumer.close()
