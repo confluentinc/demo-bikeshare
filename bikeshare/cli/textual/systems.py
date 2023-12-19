@@ -12,12 +12,11 @@ class SystemsTreeApp(App):
         keys = sorted(data.keys())
         for k in keys:
             v = data[k]
+            child = node.add(k) 
             if isinstance(v, dict):
-                child = node.add(k)
                 self._recurse_systems(child, v)
             elif isinstance(v, list):
                 sorted_v = sorted(v, key=lambda x: x['Location'])
-                child = node.add(k)
                 for item in sorted_v:
                     child.add_leaf(f'{item["Location"]} - {item["Name"]} ({item["System ID"]})')
     
