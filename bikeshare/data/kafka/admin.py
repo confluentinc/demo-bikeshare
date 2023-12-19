@@ -37,7 +37,7 @@ def serializer_for_json_schema(sr_config, schema_file, topic):
     
     return JSONSerializer(dumps(schema), sr_client)
 
-def deserializer_for_flink_avro_schema(sr_config, schema_file):
+def deserializer_for_avro_schema(sr_config, schema_file):
     sr_client = SchemaRegistryClient(sr_config)
     
     with open(schema_file) as fh:

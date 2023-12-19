@@ -1,5 +1,6 @@
 from datetime import datetime
 from time import sleep
+from collections.abc import Callable, Iterable
 
 from typer import Typer, Option
 from typing_extensions import Annotated
@@ -12,10 +13,10 @@ from rich.live import Live
 from rich.text import Text
 
 from bikeshare.globals import GLOBALS
-from bikeshare.data.source import gbfs
+from bikeshare.data import gbfs
 from bikeshare.data.kafka.consumer import consume as _consume
 from bikeshare.data.kafka.producer import multiple_producer_fanout
-from bikeshare.data.kafka.admin import create_topic, serializer_for_json_schema, deserializer_for_flink_avro_schema
+from bikeshare.data.kafka.admin import create_topic, serializer_for_json_schema, deserializer_for_avro_schema
 from bikeshare.data.kafka.utils import cc_config, sr_config
 from bikeshare.cli.textual.systems import SystemsTreeApp
 
@@ -23,7 +24,7 @@ cli = Typer()
 
 _system_id_from_label = lambda label: label.split('(')[-1].replace(')', '')
 
-def _color_station_table(row):
+def _color_station_table(row:dict) -> dict:
     if row['availability_ratio'] >= GLOBALS['station_availability_high']:
         color = GLOBALS['station_availability_color']['high']
     elif row['availability_ratio'] <= GLOBALS['station_availability_low']:
@@ -39,13 +40,15 @@ def _color_station_table(row):
         
     return _row
         
-        
-
-def _stations_table(headers, data, sort_by:str='last_updated', desc:bool=True, hidden_fields:list|None=None, colorer:callable=None):
+def _stations_table(headers:Iterable[str], data:dict, sort_by:str='last_updated', desc:bool=True, 
+                    hidden_fields:list|None=None, colorer:Callable[[dict],dict]|None=None):
+    # set defaults
     hidden_fields = hidden_fields or [] # collection types as defaults cause weird errors as they're mutable and persistent across calls
     colorer = colorer or (lambda x: {k:str(v) for k, v in x.items()}) # default to no color and ensure string
+    
     _data = [v for v in data.values()]
     sorted_data = sorted(_data, key=lambda x: x[sort_by], reverse=desc)
+    
     table = Table(*headers, show_header=True)
     
     for row in sorted_data:
@@ -114,7 +117,7 @@ def produce(system_id:Annotated[str, Option(help='ID of system to use - use `jou
     
     while True:
         start = datetime.now()
-        async_run(multiple_producer_fanout(GLOBALS['cc_config'], topic, stations_by_name, fanout_size=fanout_size, data_seralizer=seralizer))
+        async_run(multiple_producer_fanout(GLOBALS['cc_config'], topic, stations_by_name, seralizer, fanout_size=fanout_size))
         if produce_forever:
             ## check to see if a full minute has elapsed - if not, wait until it has
             time_spent = (datetime.now() - start).total_seconds()
@@ -137,7 +140,7 @@ def consume(consumer_id:Annotated[str, Option(help='ID for consumer to use')]='l
     '''
     Show online stations
     '''
-    deserializer = deserializer_for_flink_avro_schema(GLOBALS['sr_config'], f'schemas/{topic}.avsc')
+    deserializer = deserializer_for_avro_schema(GLOBALS['sr_config'], f'schemas/{topic}.avsc')
     first_message = None
     data = {}
     hidden_fields = hidden_fields.split(',') if hidden_fields else []

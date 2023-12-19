@@ -1,6 +1,5 @@
-from json import dumps
 from asyncio import get_event_loop, gather
-from datetime import datetime
+from collections.abc import Callable
 
 from confluent_kafka import Producer
 from confluent_kafka.serialization import SerializationContext, MessageField
@@ -16,11 +15,11 @@ def _generic_error_printing_callback(err, msg):
         
 async def _flush_and_kill_producer(producer:Producer):
     producer.flush()
-    del producer ## frees up file handlers 
+    del producer ## frees up file handlers (allegedly)
 
 ## fanout_size is finnicky and it's not clear what the best value is.  6 seems to work well on my machine for the citibike station status data    
-async def multiple_producer_fanout(config:dict, topic:str, data:dict, fanout_size:int=6,
-                                   delivery_callback=_generic_error_printing_callback, data_seralizer=None):
+async def multiple_producer_fanout(config:dict, topic:str, data:dict, data_seralizer:Callable, 
+                                   fanout_size:int=6, delivery_callback:Callable=_generic_error_printing_callback):
     '''
     Producer is created per message with the same client.id as the key of the message.
     Flushes are fanned out to a pool of `fanout_size` workers.  This seems to work best to be
@@ -30,7 +29,6 @@ async def multiple_producer_fanout(config:dict, topic:str, data:dict, fanout_siz
     assert callable(delivery_callback)
     
     config = filter_timeout_property(config)
-    data_seralizer = data_seralizer or dumps # default to basic json for topics without schemas
     event_loop = get_event_loop()
     
     counter = 0 

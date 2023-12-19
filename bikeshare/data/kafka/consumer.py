@@ -4,28 +4,21 @@ from confluent_kafka.serialization import SerializationContext, MessageField
 from rich import print
 
 def consume(cc_config, topic, deseralizer, consumer_id, poll_interval):
-    
     cc_config['group.id'] = consumer_id
-    # Create a Kafka consumer
     consumer = Consumer(cc_config)
-
-    # Subscribe to a topic
     consumer.subscribe([topic])
 
-    # Start consuming messages
     try:
         while True:
-            msg = consumer.poll(poll_interval)  # Wait for 1 second for new messages
+            msg = consumer.poll(poll_interval)
             if msg is not None:
                 if msg.error():
                     print(f"Consumer error: {msg.error()}")
                     continue
                 
-                ## deserialize the message and yield it
                 msg_deseralized = deseralizer(msg.value(),  SerializationContext(msg.topic(), MessageField.VALUE))
                 yield msg_deseralized
             else:
                 yield msg
-            
     finally:
         consumer.close()
