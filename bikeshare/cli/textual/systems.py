@@ -8,22 +8,18 @@ class SystemsTreeApp(App):
         super().__init__()
         self.systems = systems
         
-    def _recurse_systems(self, node:TreeNode, data:dict|list) -> Tree:
-        if isinstance(data, dict):
-            keys = sorted(data.keys())
-            for k in keys:
-                v = data[k]
-                if isinstance(v, dict):
-                    child = node.add(k)
-                    self._recurse_systems(child, v)
-                elif isinstance(v, list):
-                    sorted_v = sorted(v, key=lambda x: x['Location'])
-                    child = node.add(k)
-                    for item in sorted_v:
-                        child.add_leaf(f'{item["Location"]} - {item["Name"]} ({item["System ID"]})')
-        else:
-            for item in data:
-                node.add_leaf(item)
+    def _recurse_systems(self, node:TreeNode, data:dict) -> Tree:
+        keys = sorted(data.keys())
+        for k in keys:
+            v = data[k]
+            if isinstance(v, dict):
+                child = node.add(k)
+                self._recurse_systems(child, v)
+            elif isinstance(v, list):
+                sorted_v = sorted(v, key=lambda x: x['Location'])
+                child = node.add(k)
+                for item in sorted_v:
+                    child.add_leaf(f'{item["Location"]} - {item["Name"]} ({item["System ID"]})')
     
     def compose(self) -> ComposeResult:
         tree: Tree[dict] = Tree("World")
