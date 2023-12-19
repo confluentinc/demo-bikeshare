@@ -1,3 +1,4 @@
+from json import loads
 from datetime import datetime
 
 from rich import print
@@ -5,34 +6,59 @@ from gbfs.services import SystemDiscoveryService
 
 ds = SystemDiscoveryService()
 
+def _country_metadata():
+    with open('country-map.json') as fh:
+        return loads(fh.read())
+
 def systems():
     _systems = ds.systems
+    country_metadata = _country_metadata()
+    systems = {}
+    
+    for country in country_metadata.values():
+        if country['continent'] not in ('Antarctica', 'Africa'):
+            systems.setdefault(country['continent'], {})
     
     us_systems = {}
+
     for system in _systems:
-        
-        ## filter out systems that don't have stations and isolate to US for now
-        if (system['Country Code'] == 'US'
-            and ' ' not in system['System ID'] 
-            and 'bird' not in system['System ID']
-            and 'Link' not in system['System ID']
-            and 'lime' not in system['System ID']
-            and 'revel' not in system['System ID']
-            and not system['System ID'].isnumeric()
-            and not system['System ID'].startswith('9')):
-            try:
-                system['Location'] = system['Location'].replace(', US', '')
-                _, state = system['Location'].split(',')
-            except ValueError:
-                if system['Location'].endswith('NS'):
-                    # filter out bad systems/locations
-                    continue
-                print(system)
-                raise
-            
-            us_systems.setdefault(state.strip(), []).append(system)
-      
-    return us_systems
+        ## filter out systems that don't have stations
+        if all((' ' not in system['System ID'], 
+                   'bird' not in system['System ID'],
+                   'Link' not in system['System ID'],
+                   'lime' not in system['System ID'],
+                   'revel' not in system['System ID'],
+                   'flamingo' not in system['System ID'],
+                   'hellocycling' not in system['System ID'],
+                   'docomo' not in system['System ID'],
+                   'dott' not in system['System ID'],
+                   'donkey' not in system['System ID'],
+                   'beryl' not in system['System ID'],
+                   'pony' not in system['System ID'],
+                   'zeus' not in system['System ID'],
+                   'check' not in system['System ID'],
+                    not system['System ID'].isnumeric(),
+                    not system['System ID'].startswith('9'))):
+            if system['Country Code'] == 'US':
+                        try:
+                            system['Location'] = system['Location'].replace(', US', '')
+                            _, state = system['Location'].split(',')
+                        except ValueError:
+                            if system['Location'].endswith('NS'):
+                                # filter out bad systems/locations
+                                continue
+                            print(system)
+                            raise
+                        
+                        us_systems.setdefault(state.strip(), []).append(system)
+            else:
+                
+                continent = country_metadata[system['Country Code']]['continent']
+                systems[continent].setdefault(system['Country Code'], []).append(system)
+
+                    
+    systems['North America']['US'] = us_systems
+    return systems
 
 
 def system_detail(system_id):
