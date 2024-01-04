@@ -1,4 +1,3 @@
-from rich import print
 from textual.app import App, ComposeResult
 from textual.widgets import Tree
 from textual.widgets.tree import TreeNode

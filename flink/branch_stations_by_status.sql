@@ -19,8 +19,9 @@ CREATE TABLE station_offline (
   ttl BIGINT NOT NULL
 );
 
+
 INSERT INTO station_online
-SELECT station.station_id, 
+SELECT CAST(station.station_id AS STRING), 
        station.name, 
        station.lat, 
        station.lon, 
@@ -33,7 +34,7 @@ FROM station_status
 WHERE station.is_renting;
 
 INSERT INTO station_offline
-SELECT station.station_id, 
+SELECT CAST(station.station_id AS STRING),
        station.name, 
        station.lat, 
        station.lon, 
@@ -41,5 +42,7 @@ SELECT station.station_id,
        ttl 
 FROM station_status 
 WHERE NOT station.is_renting;
+
+
 
 

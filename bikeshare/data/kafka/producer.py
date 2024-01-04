@@ -25,8 +25,6 @@ async def multiple_producer_fanout(config:dict, topic:str, data:dict, data_seral
     Flushes are fanned out to a pool of `fanout_size` workers.  This seems to work best to be
     close to the number of cores on the machine.
     '''
-    assert isinstance(data,dict)
-    assert callable(delivery_callback)
     
     config = filter_timeout_property(config)
     event_loop = get_event_loop()
