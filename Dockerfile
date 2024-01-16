@@ -4,6 +4,7 @@ RUN apt update
 RUN apt install -y tmux
 
 RUN curl -sSL https://install.python-poetry.org |  POETRY_HOME=/usr/local python3 -
+RUN curl -L --http1.1 https://cnfl.io/cli | sh -s -- -b /usr/local/bin
 
 ENV INSTALL_DIR=/opt/demo
 WORKDIR ${INSTALL_DIR}
