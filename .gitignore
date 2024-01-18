@@ -4,3 +4,4 @@ __pycache__
 .terraform.lock.hcl
 .terraform/
 *tfstate*
+.confluent
