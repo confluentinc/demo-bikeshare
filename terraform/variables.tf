@@ -25,7 +25,7 @@ variable "cloud" {
 variable "sr_package"{
     description = "Schema Registry package"
     type        = string
-    default     = "ESSENTIALS"
+    default     = "ADVANCED"
 }
 
 variable "cc_api_key" {
