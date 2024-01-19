@@ -14,3 +14,17 @@ output "schema_registry_cluster" {
   value = confluent_schema_registry_cluster.sr
 }
 
+output "kafka_api_key"{
+  value = confluent_api_key.kafka
+  sensitive = true
+}
+
+output "schema_registry_api_key"{
+  value = confluent_api_key.sr
+  sensitive = true
+}
+
+output "service_account"{
+  value = confluent_service_account.sa
+  sensitive = true
+}
