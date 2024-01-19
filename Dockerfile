@@ -7,7 +7,7 @@ RUN echo ${MACHINE_ID} > /etc/machine-id
 
 ## global dependencies
 RUN apt update
-RUN apt install -y tmux gnupg software-properties-common jq
+RUN apt install -y tmux gnupg software-properties-common jq gettext-base
 
 ## terraform install
 ## https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli
