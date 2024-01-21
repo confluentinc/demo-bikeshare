@@ -59,5 +59,5 @@ fi
 # Build the docker container and run it
 docker build -t bikeshare .
 docker run -dit -v terraform:/opt/bikeshare/terraform -v .confluent:/root/.confluent --name bikeshare-demo bikeshare sleep infinity
-docker exec -it bikeshare-demo bash bash/tmux.sh
+docker exec -it -e "SKIP_FLINK=1" bikeshare-demo bash bash/tmux.sh
 
