@@ -45,3 +45,5 @@ RUN poetry install
 ## initialize terraform
 WORKDIR ${INSTALL_DIR}/terraform
 RUN terraform init
+
+WORKDIR ${INSTALL_DIR}
