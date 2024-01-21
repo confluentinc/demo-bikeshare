@@ -48,3 +48,7 @@ The Hard Way of running the demo mainly exists as an educational tool to explain
    1. Using the [Transformation SQL](flink/branch_stations_by_status.sql) provided, copy paste that into the `SQL Workspace` window that was opened earlier
 3. Once that's executed successfully, you can return to the tmux page which will eventually start to populate data into a table showing the status of the various 
    1. This can take a few minutes for the data to start appearing
+
+## Development Settings
+- `BIKESHARE_FORCE_DOCKER_REBUILD=1` will force the container to rebuild when running `run.sh` or `deploy.sh` which is helpful if it seems like a cached version of the container is being ran.  Can remove with `unset BIKESHARE_FORCE_DOCKER_REBUILD`.
+- `SKIP_FLINK=1` will skip the Flink `INSERT` statements from being ran as a part of the [bash/tmux.sh](bash/tmux.sh) script.
