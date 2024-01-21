@@ -1,6 +1,6 @@
 #! /bin/bash
 
-cd ../terraform
+cd terraform
 terraform init
 terraform apply -auto-approve
 
@@ -31,7 +31,6 @@ cd ..
 envsubst < client.properties.template > client.properties
 
 ## check to see if we need to login
-cd flink
 output="$(confluent --help 2>&1)" # Redirects stderr to stdout
 if ! echo "$output" | grep -q "flink"; then
     confluent login --no-browser
@@ -39,5 +38,5 @@ fi
 
 ## create flink tables
 confluent environment use $CC_ENV
-confluent flink statement create --compute-pool $FLINK_POOL --database $KAFKA_CLUSTER --sql "$(cat station_status_tables/online_table.sql | tr -d '\n' | xargs)"
-confluent flink statement create --compute-pool $FLINK_POOL --database $KAFKA_CLUSTER --sql "$(cat station_status_tables/offline_table.sql | tr -d '\n' | xargs)"
+confluent flink statement create --compute-pool $FLINK_POOL --database $KAFKA_CLUSTER --sql "$(cat flink/station_status_tables/online_table.sql | tr -d '\n' | xargs)"
+confluent flink statement create --compute-pool $FLINK_POOL --database $KAFKA_CLUSTER --sql "$(cat flink/station_status_tables/offline_table.sql | tr -d '\n' | xargs)"

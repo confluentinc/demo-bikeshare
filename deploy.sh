@@ -15,9 +15,9 @@ else
 fi
 
 if [ -z "$CC_API_KEY" ] || [ -z "$CC_API_SECRET" ]; then
-    docker exec -it bikeshare-demo /bin/bash -c 'cd /opt/bikeshare/bash; bash provision.sh'
+    docker exec -it bikeshare-demo /bin/bash bash/provision.sh
 else
-    docker exec -it -e "TF_VAR_cc_api_key=$CC_API_KEY" -e "TF_VAR_cc_api_secret=$CC_API_SECRET" bikeshare-demo /bin/bash -c 'cd /opt/bikeshare/bash; bash provision.sh'
+    docker exec -it -e "TF_VAR_cc_api_key=$CC_API_KEY" -e "TF_VAR_cc_api_secret=$CC_API_SECRET" bikeshare-demo /bin/bash bash/provision.sh
 fi
 
-docker exec -it bikeshare-demo /bin/bash -c 'cd /opt/bikeshare; bash bash/tmux.sh'
+docker exec -it bikeshare-demo /bin/bash bash/tmux.sh

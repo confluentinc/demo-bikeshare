@@ -57,7 +57,12 @@ fi
 # fi
 
 # Build the docker container and run it
-docker build -t bikeshare .
+if [ -z "$BIKESHARE_FORCE_DOCKER_REBUILD" ]; then
+    docker build -t bikeshare . 
+else
+    docker build --no-cache -t bikeshare . 
+fi
+
 docker run -dit -v terraform:/opt/bikeshare/terraform -v .confluent:/root/.confluent --name bikeshare-demo bikeshare sleep infinity
 docker exec -it -e "SKIP_FLINK=1" bikeshare-demo bash bash/tmux.sh
 
