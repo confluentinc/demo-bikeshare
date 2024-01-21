@@ -2,6 +2,8 @@ FROM python:3
 
 ## confluent CLI uses this as a value for authentication - user can provide another if they'd prefer, but if it's
 ## not static from container instance to container instance it prevents confluent CLI auth from being cached
+## python will batch logs, and this can lead to things looking like they're not working
+ENV PYTHONUNBUFFERED=1
 ENV MACHINE_ID=64a4eec8-f63f-422c-873b-faff6a3cb3f3
 RUN echo ${MACHINE_ID} > /etc/machine-id
 
@@ -40,5 +42,6 @@ RUN mv poetry.lock.bak poetry.lock
 ## install the app into the environment - as it wasn't there when we did this before
 RUN poetry install 
 
-## python will batch logs, and this can lead to things looking like they're not working
-ENV PYTHONUNBUFFERED=1
+## initialize terraform
+WORKDIR ${INSTALL_DIR}/terraform
+RUN terraform init

@@ -1,4 +1,4 @@
-INSERT INTO station_offline
+INSERT INTO station_offline 
 SELECT CAST(station.station_id AS STRING),
        station.name, 
        station.lat, 

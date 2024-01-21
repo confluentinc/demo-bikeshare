@@ -12,7 +12,7 @@ export SERVICE_ACCOUNT=$(terraform output -json | jq -r .service_account.value.i
 
 ## pull credentials
 bootstrapEndpoint=$(terraform output -json | jq -r .kafka_cluster.value.bootstrap_endpoint)
-export BOOTSTRAP_SERVER=$(echo $bootstrapEndpoint | sed 's/[^:]*:\/\///')
+export BOOTSTRAP_SERVER=$(echo $bootstrapEndpoint | sed 's/[^:]*:\/\///')  ## strip off the protocol
 export KAFKA_API_KEY=$(terraform output -json | jq -r .kafka_api_key.value.id)
 export KAFKA_API_SECRET=$(terraform output -json | jq -r .kafka_api_key.value.secret)
 export SCHEMA_REGISTRY_URL=$(terraform output -json | jq -r .schema_registry_cluster.value.rest_endpoint)
