@@ -63,6 +63,6 @@ else
     docker build --no-cache -t bikeshare . 
 fi
 
-docker run -dit -v terraform:/opt/bikeshare/terraform -v .confluent:/root/.confluent --name bikeshare-demo bikeshare sleep infinity
+docker run -dit --name bikeshare-demo bikeshare sleep infinity
 docker exec -it -e "SKIP_FLINK=1" bikeshare-demo bash bash/tmux.sh
 
