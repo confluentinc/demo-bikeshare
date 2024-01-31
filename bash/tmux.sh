@@ -9,7 +9,7 @@ sleep 5 # let produce start to run to get schema setup
 
 tmux split-window -h
 
-if [ -z "$SKIP_FLINK"]; then
+if [ -z "$SKIP_FLINK" ]; then
     cd terraform
     
     export CC_ENV=$(terraform output -json | jq -r .environment.value.id)
