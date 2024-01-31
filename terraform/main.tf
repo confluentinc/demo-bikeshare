@@ -51,7 +51,7 @@ resource "confluent_kafka_cluster" "kafka" {
   availability = "SINGLE_ZONE"
   cloud        = var.cloud
   region       = var.region
-  basic {}
+  standard {}
 
   environment {
     id = confluent_environment.env.id
@@ -110,10 +110,16 @@ resource "confluent_api_key" "sr" {
 }
 
 ## kafka ##
-resource "confluent_role_binding" "kafka" {
+resource "confluent_role_binding" "env_admin" {
   principal   = "User:${confluent_service_account.sa.id}"
   role_name   = "CloudClusterAdmin"
   crn_pattern = confluent_kafka_cluster.kafka.rbac_crn
+}
+
+resource "confluent_role_binding" "kafka_cluster" {
+  principal   = "User:${confluent_service_account.sa.id}"
+  role_name   = "DeveloperWrite"
+  crn_pattern = "${confluent_kafka_cluster.kafka.rbac_crn}/kafka=${confluent_kafka_cluster.kafka.id}"
 }
 
 resource "confluent_api_key" "kafka" {
@@ -175,47 +181,54 @@ resource "confluent_schema" "station_status" {
     }
 }
 
-# data "confluent_flink_region" "flink_region" {
-#   cloud   = var.cloud
-#   region  = var.region
-# }
+data "confluent_flink_region" "flink_region" {
+  cloud   = var.cloud
+  region  = var.region
+}
 
-# resource "confluent_api_key" "flink" {
-#   display_name = "flink-api-key"
-#   description  = "Flink API Key used for the Bikeshare Demo"
-#   owner {
-#     id          = confluent_service_account.sa.id
-#     api_version = confluent_service_account.sa.api_version
-#     kind        = confluent_service_account.sa.kind
-#   }
+resource "confluent_api_key" "flink" {
+  display_name = "flink-api-key"
+  description  = "Flink API Key used for the Bikeshare Demo"
+  owner {
+    id          = confluent_service_account.sa.id
+    api_version = confluent_service_account.sa.api_version
+    kind        = confluent_service_account.sa.kind
+  }
 
-#   managed_resource {
-#     id          = data.confluent_flink_region.flink_region.id
-#     api_version = data.confluent_flink_region.flink_region.api_version
-#     kind        = data.confluent_flink_region.flink_region.kind
+  managed_resource {
+    id          = data.confluent_flink_region.flink_region.id
+    api_version = data.confluent_flink_region.flink_region.api_version
+    kind        = data.confluent_flink_region.flink_region.kind
 
-#     environment {
-#       id = confluent_environment.env.id
-#     }
-#   }
-# }
+    environment {
+      id = confluent_environment.env.id
+    }
+  }
+  depends_on    = [
+    confluent_role_binding.kafka_cluster
+  ]
+}
 
-# resource "confluent_flink_statement" "example" {
-#   compute_pool {
-#     id = confluent_flink_compute_pool.flink.id
-#   }
-#   principal {
-#     id = confluent_service_account.sa.id
-#   }
-#   rest_endpoint   = confluent_flink_compute_pool.flink.rest_endpoint
-#   credentials {
-#     key    = confluent_api_key.flink.id
-#     secret = confluent_api_key.flink.secret
-#   }
+resource "confluent_flink_statement" "example" {
+  compute_pool {
+    id = confluent_flink_compute_pool.flink.id
+  }
+  principal {
+    id = confluent_service_account.sa.id
+  }
+  rest_endpoint   = confluent_flink_compute_pool.flink.rest_endpoint
+  credentials {
+    key    = confluent_api_key.flink.id
+    secret = confluent_api_key.flink.secret
+  }
 
-#   statement  = "CREATE TABLE random_int_table(ts TIMESTAMP_LTZ(3), random_value INT);"
-#   properties = {
-#     "sql.current-catalog"  = confluent_environment.env.display_name
-#     "sql.current-database" = confluent_kafka_cluster.kafka.display_name
-#   }
-# }
+  statement  = "CREATE TABLE random_int_table(ts TIMESTAMP_LTZ(3), random_value INT);"
+  properties = {
+    "sql.current-catalog"  = confluent_environment.env.display_name
+    "sql.current-database" = confluent_kafka_cluster.kafka.display_name
+  }
+
+  depends_on    = [
+    confluent_role_binding.kafka_cluster
+  ]
+}
