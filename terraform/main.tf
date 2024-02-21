@@ -18,6 +18,8 @@ provider "confluent" {
     cloud_api_secret = var.cc_api_secret
 }
 
+data "confluent_organization" "main" {}
+
 ## env ##
 ## the theory is that with creating a new name each time we won't encounter as many errors during development
 resource "random_pet" "env_name" {
@@ -59,6 +61,11 @@ resource "confluent_kafka_cluster" "kafka" {
 }
 
 ## flink ##
+data "confluent_flink_region" "flink_region" {
+  cloud   = var.cloud
+  region  = var.region
+}
+
 resource "confluent_flink_compute_pool" "flink" {
   display_name = var.flink_cluster_name
   cloud        = var.cloud
@@ -67,6 +74,12 @@ resource "confluent_flink_compute_pool" "flink" {
   environment {
     id = confluent_environment.env.id
   }
+    depends_on = [
+    confluent_role_binding.flink-statements-runner-environment-admin,
+    confluent_role_binding.flink-admin-assigner,
+    confluent_role_binding.flink-admin-rb,
+    confluent_api_key.flink,
+  ]
 }
 
 ################
@@ -142,6 +155,69 @@ resource "confluent_api_key" "kafka" {
   }
 }
 
+## flink ##
+
+## service account to execute a Flink statements
+resource "confluent_service_account" "flink-statements-runner" {
+  display_name = "${random_pet.env_name.id}-statements-runner"
+  description  = "Service account for running Flink Statements in the bikeshare demo"
+}
+
+resource "confluent_role_binding" "flink-statements-runner-environment-admin" {
+  principal   = "User:${confluent_service_account.flink-statements-runner.id}"
+  role_name   = "EnvironmentAdmin"
+  crn_pattern = confluent_environment.env.resource_name
+}
+
+## service account that owns Flink API Key
+resource "confluent_service_account" "flink-admin" {
+  display_name = "${random_pet.env_name.id}-flink-manager"
+  description  = "Service account that has got full access to Flink resources in an environment"
+}
+
+resource "confluent_role_binding" "flink-admin-rb" {
+  principal   = "User:${confluent_service_account.flink-admin.id}"
+  role_name   = "FlinkAdmin"
+  crn_pattern = confluent_environment.env.resource_name
+}
+
+resource "confluent_role_binding" "flink-dev-rb" {
+  principal   = "User:${confluent_service_account.flink-admin.id}"
+  role_name   = "FlinkDeveloper"
+  crn_pattern = confluent_environment.env.resource_name
+}
+
+resource "confluent_role_binding" "flink-admin-assigner" {
+  principal   = "User:${confluent_service_account.flink-admin.id}"
+  role_name   = "Assigner"
+  crn_pattern = "${data.confluent_organization.main.resource_name}/service-account=${confluent_service_account.flink-statements-runner.id}"
+}
+
+
+resource "confluent_api_key" "flink" {
+  display_name = "flink-api-key"
+  description  = "Flink API Key used for the Bikeshare Demo"
+  owner {
+    id          = confluent_service_account.flink-admin.id
+    api_version = confluent_service_account.flink-admin.api_version
+    kind        = confluent_service_account.flink-admin.kind
+  }
+
+  managed_resource {
+    id          = data.confluent_flink_region.flink_region.id
+    api_version = data.confluent_flink_region.flink_region.api_version
+    kind        = data.confluent_flink_region.flink_region.kind
+
+    environment {
+      id = confluent_environment.env.id
+    }
+  }
+  depends_on    = [
+    confluent_role_binding.kafka_cluster
+  ]
+}
+
+
 ############
 ## Topics ##
 ############
@@ -159,7 +235,10 @@ resource "confluent_kafka_topic" "station_status" {
     
     ## prevents issues with deletion
     depends_on = [
-      confluent_schema_registry_cluster.sr
+      confluent_role_binding.sr,
+      confluent_schema_registry_cluster.sr,
+      confluent_role_binding.env_admin,
+      confluent_api_key.sr
     ]
 }
 
@@ -179,56 +258,45 @@ resource "confluent_schema" "station_status" {
     schema_registry_cluster {
         id = confluent_schema_registry_cluster.sr.id
     }
+    depends_on = [
+      confluent_kafka_topic.station_status
+    ]
 }
 
-data "confluent_flink_region" "flink_region" {
-  cloud   = var.cloud
-  region  = var.region
-}
-
-resource "confluent_api_key" "flink" {
-  display_name = "flink-api-key"
-  description  = "Flink API Key used for the Bikeshare Demo"
-  owner {
-    id          = confluent_service_account.sa.id
-    api_version = confluent_service_account.sa.api_version
-    kind        = confluent_service_account.sa.kind
-  }
-
-  managed_resource {
-    id          = data.confluent_flink_region.flink_region.id
-    api_version = data.confluent_flink_region.flink_region.api_version
-    kind        = data.confluent_flink_region.flink_region.kind
-
-    environment {
-      id = confluent_environment.env.id
-    }
-  }
-  depends_on    = [
-    confluent_role_binding.kafka_cluster
-  ]
-}
-
-resource "confluent_flink_statement" "example" {
+resource "confluent_flink_statement" "create_online_table" {
   compute_pool {
     id = confluent_flink_compute_pool.flink.id
   }
   principal {
-    id = confluent_service_account.sa.id
+    id = confluent_service_account.flink-statements-runner.id
   }
-  rest_endpoint   = confluent_flink_compute_pool.flink.rest_endpoint
-  credentials {
-    key    = confluent_api_key.flink.id
-    secret = confluent_api_key.flink.secret
-  }
-
-  statement  = "CREATE TABLE random_int_table(ts TIMESTAMP_LTZ(3), random_value INT);"
   properties = {
     "sql.current-catalog"  = confluent_environment.env.display_name
     "sql.current-database" = confluent_kafka_cluster.kafka.display_name
   }
+  statement     = file("../flink/station_status_tables/online_table.sql")
+  rest_endpoint = confluent_flink_compute_pool.flink.rest_endpoint
+  credentials {
+    key    = confluent_api_key.flink.id
+    secret = confluent_api_key.flink.secret
+  }
+}
 
-  depends_on    = [
-    confluent_role_binding.kafka_cluster
-  ]
+resource "confluent_flink_statement" "create_offline_table" {
+  compute_pool {
+    id = confluent_flink_compute_pool.flink.id
+  }
+  principal {
+    id = confluent_service_account.flink-statements-runner.id
+  }
+  properties = {
+    "sql.current-catalog"  = confluent_environment.env.display_name
+    "sql.current-database" = confluent_kafka_cluster.kafka.display_name
+  }
+  statement     = file("../flink/station_status_tables/offline_table.sql")
+  rest_endpoint = confluent_flink_compute_pool.flink.rest_endpoint
+  credentials {
+    key    = confluent_api_key.flink.id
+    secret = confluent_api_key.flink.secret
+  }
 }
