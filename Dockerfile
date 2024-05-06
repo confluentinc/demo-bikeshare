@@ -1,9 +1,10 @@
 FROM python:3
 
-## confluent CLI uses this as a value for authentication - user can provide another if they'd prefer, but if it's
-## not static from container instance to container instance it prevents confluent CLI auth from being cached
+
 ## python will batch logs, and this can lead to things looking like they're not working
 ENV PYTHONUNBUFFERED=1
+## confluent CLI uses this as a value for authentication - user can provide another if they'd prefer, but if it's
+## not static from container instance to container instance it prevents confluent CLI auth from being cached
 ENV MACHINE_ID=64a4eec8-f63f-422c-873b-faff6a3cb3f3
 RUN echo ${MACHINE_ID} > /etc/machine-id
 

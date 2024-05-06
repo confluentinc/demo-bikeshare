@@ -2,6 +2,7 @@ terraform {
   required_providers {
     confluent = {
       source  = "confluentinc/confluent"
+      version = "1.67.1"
     }
     random = {
       source  = "hashicorp/random"
@@ -263,7 +264,17 @@ resource "confluent_schema" "station_status" {
     ]
 }
 
+###############
+## Flink SQL ##
+###############
+
 resource "confluent_flink_statement" "create_online_table" {
+  organization {
+    id = data.confluent_organization.main.id
+  }
+  environment {
+    id = confluent_environment.env.id
+  }
   compute_pool {
     id = confluent_flink_compute_pool.flink.id
   }
@@ -275,7 +286,7 @@ resource "confluent_flink_statement" "create_online_table" {
     "sql.current-database" = confluent_kafka_cluster.kafka.display_name
   }
   statement     = file("../flink/station_status_tables/online_table.sql")
-  rest_endpoint = confluent_flink_compute_pool.flink.rest_endpoint
+  rest_endpoint = data.confluent_flink_region.flink_region.rest_endpoint
   credentials {
     key    = confluent_api_key.flink.id
     secret = confluent_api_key.flink.secret
@@ -283,6 +294,12 @@ resource "confluent_flink_statement" "create_online_table" {
 }
 
 resource "confluent_flink_statement" "create_offline_table" {
+  organization {
+    id = data.confluent_organization.main.id
+  }
+  environment {
+    id = confluent_environment.env.id
+  }
   compute_pool {
     id = confluent_flink_compute_pool.flink.id
   }
@@ -294,7 +311,7 @@ resource "confluent_flink_statement" "create_offline_table" {
     "sql.current-database" = confluent_kafka_cluster.kafka.display_name
   }
   statement     = file("../flink/station_status_tables/offline_table.sql")
-  rest_endpoint = confluent_flink_compute_pool.flink.rest_endpoint
+  rest_endpoint = data.confluent_flink_region.flink_region.rest_endpoint
   credentials {
     key    = confluent_api_key.flink.id
     secret = confluent_api_key.flink.secret
