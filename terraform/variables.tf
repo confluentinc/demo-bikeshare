@@ -38,3 +38,9 @@ variable "cc_api_secret" {
   type        = string
   sensitive   = true
 }
+
+variable "run_flink_insert_statements" {
+  description = "Run Flink insert statements"
+  type        = bool
+  default     = false
+}

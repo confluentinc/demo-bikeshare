@@ -1,8 +1,26 @@
 #! /bin/bash
 
+TERRAFORM_MAX_RETRIES=3 
+TERRAFORM_RETRY_INTERVAL=30
+
 cd terraform
 terraform init
-terraform apply -auto-approve
+
+attempt=1
+while true; do
+    echo "Attempt $attempt"
+    terraform apply -auto-approve
+    if [ $? -eq 0 ]; then
+        break
+    fi
+    if [ $attempt -eq $TERRAFORM_MAX_RETRIES ]; then
+        echo "Max attempts reached. Exiting..."
+        exit 1
+    fi
+    echo "Command failed. Retrying in $(($attempt * $TERRAFORM_RETRY_INTERVAL)) seconds..."
+    sleep $(($attempt * TERRAFORM_RETRY_INTERVAL))
+    attempt=$(($attempt + 1))
+done
 
 ## pull basics
 export CC_ENV=$(terraform output -json | jq -r .environment.value.id)
@@ -29,14 +47,3 @@ export SCHEMA_REGISTRY_API_SECRET=$(terraform output -json | jq -r .schema_regis
 ## fill out client properties template 
 cd ..
 envsubst < client.properties.template > client.properties
-
-## check to see if we need to login
-output="$(confluent --help 2>&1)" # Redirects stderr to stdout
-if ! echo "$output" | grep -q "flink"; then
-    confluent login --no-browser
-fi
-
-## create flink tables
-confluent environment use $CC_ENV
-confluent flink statement create --compute-pool $FLINK_POOL --database $KAFKA_CLUSTER --sql "$(cat flink/station_status_tables/online_table.sql | tr -d '\n' | xargs)"
-confluent flink statement create --compute-pool $FLINK_POOL --database $KAFKA_CLUSTER --sql "$(cat flink/station_status_tables/offline_table.sql | tr -d '\n' | xargs)"

@@ -9,6 +9,7 @@ else
 fi
 
 if ! [ -z "$BIKESHARE_RUN_FOREVER" ]; then
+## TODO: add a teardown to the one that will eventually shut down
     docker run -dit -v $PWD/terraform:/opt/bikeshare/terraform -v $PWD/.confluent:/root/.confluent --name bikeshare-demo bikeshare sleep $BIKESHARE_SLEEP_TIME
 else
     docker run -dit -v $PWD/terraform:/opt/bikeshare/terraform -v $PWD/.confluent:/root/.confluent --name bikeshare-demo bikeshare sleep infinity
@@ -17,7 +18,7 @@ fi
 if [ -z "$CC_API_KEY" ] || [ -z "$CC_API_SECRET" ]; then
     docker exec -it bikeshare-demo /bin/bash bash/provision.sh
 else
-    docker exec -it -e "TF_VAR_cc_api_key=$CC_API_KEY" -e "TF_VAR_cc_api_secret=$CC_API_SECRET" bikeshare-demo /bin/bash -ex bash/provision.sh
+    docker exec -it -e "TF_VAR_cc_api_key=$CC_API_KEY" -e "TF_VAR_cc_api_secret=$CC_API_SECRET" bikeshare-demo /bin/bash -e bash/provision.sh
 fi
 
-docker exec -it bikeshare-demo /bin/bash bash/tmux.sh
+docker exec -it -e "TF_VAR_cc_api_key=$CC_API_KEY" -e "TF_VAR_cc_api_secret=$CC_API_SECRET" bikeshare-demo /bin/bash -e bash/tmux.sh

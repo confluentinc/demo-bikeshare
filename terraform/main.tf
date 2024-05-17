@@ -317,3 +317,55 @@ resource "confluent_flink_statement" "create_offline_table" {
     secret = confluent_api_key.flink.secret
   }
 }
+
+resource "confluent_flink_statement" "branch_offline_stations" {
+  count = var.run_flink_insert_statements ? 1 : 0
+  organization {
+    id = data.confluent_organization.main.id
+  }
+  environment {
+    id = confluent_environment.env.id
+  }
+  compute_pool {
+    id = confluent_flink_compute_pool.flink.id
+  }
+  principal {
+    id = confluent_service_account.flink-statements-runner.id
+  }
+  properties = {
+    "sql.current-catalog"  = confluent_environment.env.display_name
+    "sql.current-database" = confluent_kafka_cluster.kafka.display_name
+  }
+  statement     = file("../flink/branch_stations_by_status/branch_offline.sql")
+  rest_endpoint = data.confluent_flink_region.flink_region.rest_endpoint
+  credentials {
+    key    = confluent_api_key.flink.id
+    secret = confluent_api_key.flink.secret
+  }
+}
+
+resource "confluent_flink_statement" "branch_online_stations" {
+  count = var.run_flink_insert_statements ? 1 : 0
+  organization {
+    id = data.confluent_organization.main.id
+  }
+  environment {
+    id = confluent_environment.env.id
+  }
+  compute_pool {
+    id = confluent_flink_compute_pool.flink.id
+  }
+  principal {
+    id = confluent_service_account.flink-statements-runner.id
+  }
+  properties = {
+    "sql.current-catalog"  = confluent_environment.env.display_name
+    "sql.current-database" = confluent_kafka_cluster.kafka.display_name
+  }
+  statement     = file("../flink/branch_stations_by_status/branch_online.sql")
+  rest_endpoint = data.confluent_flink_region.flink_region.rest_endpoint
+  credentials {
+    key    = confluent_api_key.flink.id
+    secret = confluent_api_key.flink.secret
+  }
+}
